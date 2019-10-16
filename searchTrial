@@ -1,0 +1,84 @@
+Sample search trail
+
+import UIKit
+import SwiftyJSON
+
+class ViewController: UIViewController,UITableViewDelegate,UITableViewDataSource,UISearchBarDelegate {
+
+    @IBOutlet weak var tableView: UITableView!
+    var userList : [AnyObject] = []
+    var filteredData: [String] = []
+    var isSearching = false
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.loadAPI()
+    }
+
+    func loadAPI(){
+        
+        userList.removeAll()
+        filteredData.removeAll()
+        WebserviceManager.shared.getWS(.users,isHeader: false) { (success, response) in
+            if success{
+                print (success)
+                let data = JSON(response as Any)
+                self.userList = data["data"].arrayObject! as [AnyObject]
+//                print(self.userList)
+                
+                for company in self.userList {
+                    let country_code = company["first_name"] as! String
+                    self.filteredData.append("\(country_code)")
+                }
+                
+                self.tableView.reloadData()
+            }
+            else {
+                print("error as any")
+            }
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if isSearching {
+            return filteredData.count
+        } else {
+        return userList.count
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "NameTVC", for: indexPath) as! NameTVC
+        
+        if isSearching {
+            cell.nameLbl.text = filteredData[indexPath.row]
+        }
+        else {
+        if let sourceName = userList[indexPath.row]["first_name"] as? String{
+            cell.nameLbl.text = sourceName
+        }
+        }
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 50
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        if searchBar.text == "" {
+            isSearching = false
+            loadAPI()
+            tableView.reloadData()
+        } else {
+            isSearching = true
+            filteredData = filteredData.filter({$0.contains(searchBar.text ?? "")})
+            tableView.reloadData()
+        }
+        
+        tableView.reloadData()
+    }
+
+}
+
